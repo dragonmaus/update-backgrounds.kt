@@ -62,19 +62,17 @@ private class App {
                 blacklist.forEach { state["$it$tag.jpg"] = "black" }
                 whitelist.forEach { state["$it$tag.jpg"] = "white" }
 
-                print("Updating $resolution.zip... ")
+                println(">> Updating $resolution.zip")
                 val zipFile = fetchFile(
                     "$resolution.zip",
                     downloadsDir,
                     credentials
                 )
-                println("OK")
 
                 val zip = ZipInputStream(BufferedInputStream(zipFile.inputStream()))
 
-                print("Extracting files from ${zipFile.name} to $targetDir... ")
+                print(">> Extracting ${zipFile.name} into $targetDir")
                 Files.createDirectories(targetDir)
-
                 unzip@ while (true) {
                     val entry = zip.nextEntry ?: break
                     if (entry.isDirectory) {
@@ -96,7 +94,7 @@ private class App {
                         Desktop.getDesktop().open(file)
                         val console = System.console() ?: continue@unzip
                         query@ while (true) {
-                            print("Keep ${entry.name}? (y/n/r): ")
+                            print("---- Keep ${entry.name}? (y/n/r): ")
                             when (console.readLine()?.toLowerCase()?.trim()?.getOrDefault(0, 'x')) {
                                 'y' -> {
                                     state[entry.name] = "white"
@@ -115,7 +113,6 @@ private class App {
                         file.delete()
                     }
                 }
-                println("OK")
 
                 // clean up any remaining files that are not explicitly whitelisted
                 Files.list(targetDir).map { it.fileName.toString() }.toList()
