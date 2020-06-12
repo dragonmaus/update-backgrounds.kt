@@ -71,7 +71,7 @@ private class App {
 
                 val zip = ZipInputStream(BufferedInputStream(zipFile.inputStream()))
 
-                print(">> Extracting ${zipFile.name} into $targetDir")
+                println(">> Extracting ${zipFile.name} into $targetDir")
                 Files.createDirectories(targetDir)
                 unzip@ while (true) {
                     val entry = zip.nextEntry ?: break
@@ -94,7 +94,7 @@ private class App {
                         Desktop.getDesktop().open(file)
                         val console = System.console() ?: continue@unzip
                         query@ while (true) {
-                            print("---- Keep ${entry.name}? (y/n/r): ")
+                            print("-- Keep ${entry.name}? (y/n/r): ")
                             when (console.readLine()?.toLowerCase()?.trim()?.getOrDefault(0, 'x')) {
                                 'y' -> {
                                     state[entry.name] = "white"
