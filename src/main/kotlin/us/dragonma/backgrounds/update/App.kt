@@ -30,11 +30,11 @@ private class App {
     """.trimMargin()
 
     fun run(args: Array<String>): Int {
-        GetOpt(args, "gh").forEach {
+        GetOpt(args, "h").forEach {
             when (it) {
                 Option('h') -> {
                     println(help)
-                    return 0
+                    return@run 0
                 }
             }
         }
@@ -42,9 +42,9 @@ private class App {
         val homePath = System.getProperty("user.home")
         val backgroundsDir = Paths.get(homePath, "Pictures", "Backgrounds").ensureDirectory()
         val downloadsDir = backgroundsDir.resolve("Archives").ensureDirectory()
+
         val blacklistPath = backgroundsDir.resolve("black.list").ensureFile()
         val whitelistPath = backgroundsDir.resolve("white.list").ensureFile()
-
         val blacklist = blacklistPath.toFile().readLines().toMutableSet()
         val whitelist = whitelistPath.toFile().readLines().toMutableSet()
 
@@ -58,25 +58,21 @@ private class App {
                     .resolve(Ratio(resolution).prettyPrint().replace(':', '_'))
                     .resolve(resolution)
                     .resolve("digitalblasphemy")
+                    .ensureDirectory()
                 val state = emptyMap<String, String>().toMutableMap()
                 blacklist.forEach { state["$it$tag.jpg"] = "black" }
                 whitelist.forEach { state["$it$tag.jpg"] = "white" }
 
                 println(">> Updating $resolution.zip")
-                val zipFile = fetchFile(
-                    "$resolution.zip",
-                    downloadsDir,
-                    credentials
-                )
+                val zipFile = fetchFile("$resolution.zip", downloadsDir, credentials)
 
                 val zip = ZipInputStream(BufferedInputStream(zipFile.inputStream()))
 
                 println(">> Extracting ${zipFile.name} into $targetDir")
-                Files.createDirectories(targetDir)
                 unzip@ while (true) {
                     val entry = zip.nextEntry ?: break
                     if (entry.isDirectory) {
-                        continue
+                        continue@unzip
                     }
 
                     val file = targetDir.resolve(entry.name).toFile()

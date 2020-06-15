@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "us.dragonma"
-version = "1.0.2"
+version = "1.0.3"
 
 repositories {
     mavenLocal()
@@ -14,7 +14,7 @@ repositories {
 dependencies {
     implementation(platform(kotlin("bom")))
     implementation(kotlin("stdlib-jdk8"))
-    implementation("us.dragonma", "getopt", "1.0.0")
+    implementation("us.dragonma", "getopt", "1.0.1")
 }
 
 application {

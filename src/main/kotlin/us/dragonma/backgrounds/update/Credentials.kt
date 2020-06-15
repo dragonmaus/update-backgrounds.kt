@@ -16,19 +16,19 @@ internal class Credentials(
 
     val basicAuth: String
         get() {
-            val auth = ByteArray(this.username.length + 1 + this.password.size)
+            val auth = ByteArray(username.length + 1 + password.size)
 
             var i = 0
-            this.username.forEach { auth[i++] = it.toByte() }
+            username.forEach { auth[i++] = it.toByte() }
             auth[i++] = ':'.toByte()
-            this.password.forEach { auth[i++] = it.toByte() }
+            password.forEach { auth[i++] = it.toByte() }
 
             return "Basic ${Base64.getEncoder().encodeToString(auth)}"
         }
 
     init {
         if (GraphicsEnvironmentExt.isReallyHeadless) {
-            val console = System.console()
+            val console = System.console() ?: throw CredentialsException("Unable to open console for password input")
             var prefix = ""
 
             if (title != null) {

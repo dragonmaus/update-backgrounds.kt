@@ -11,7 +11,6 @@ internal object GraphicsEnvironmentExt {
             val screenDevices = GraphicsEnvironment.getLocalGraphicsEnvironment().screenDevices
             screenDevices == null || screenDevices.isEmpty()
         } catch (e: HeadlessException) {
-            // e.printStackTrace()
             true
         }
 }
