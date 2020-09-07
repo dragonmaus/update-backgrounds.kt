@@ -8,7 +8,7 @@ import java.nio.file.StandardCopyOption
 import javax.net.ssl.HttpsURLConnection
 
 internal fun fetchFile(filename: String, directory: Path, credentials: Credentials): File {
-    val url = URL("https://secure.digitalblasphemy.com/content/zips/$filename")
+    val url = URL("https://digitalblasphemy.com/content/zips/$filename")
     val path = directory.resolve(filename)
     val file = path.toFile()
 
