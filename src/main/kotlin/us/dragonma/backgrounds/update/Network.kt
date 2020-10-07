@@ -14,7 +14,7 @@ internal fun fetchFile(filename: String, directory: Path, credentials: Credentia
 
     if (file.exists()) {
         url.setupConnection("HEAD", credentials).run {
-            if (contentLengthLong == file.length() && lastModified == file.lastModified()) {
+            if (lastModified == file.lastModified()) {
                 return file
             }
         }
