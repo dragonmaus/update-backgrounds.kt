@@ -2,10 +2,9 @@ package us.dragonma.backgrounds.update
 
 import us.dragonma.getopt.GetOpt
 import us.dragonma.getopt.Option
-import java.awt.Desktop
 import java.io.BufferedInputStream
+import java.net.URL
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.zip.ZipInputStream
@@ -43,10 +42,8 @@ private class App {
         val backgroundsDir = Paths.get(homePath, "Pictures", "Backgrounds").ensureDirectory()
         val downloadsDir = backgroundsDir.resolve("Archives").ensureDirectory()
 
-        val blacklistPath = backgroundsDir.resolve("black.list").ensureFile()
-        val whitelistPath = backgroundsDir.resolve("white.list").ensureFile()
-        val blacklist = blacklistPath.toFile().readLines().toMutableSet()
-        val whitelist = whitelistPath.toFile().readLines().toMutableSet()
+        val whitelistURL = URL("https://github.com/dragonmaus/__backgrounds/raw/master/white.list")
+        val whitelist = whitelistURL.openStream().reader().readLines()
 
         val credentials = Credentials("Digital Blasphemy Sign In")
 
@@ -59,9 +56,7 @@ private class App {
                     .resolve(resolution)
                     .resolve("digitalblasphemy")
                     .ensureDirectory()
-                val state = emptyMap<String, String>().toMutableMap()
-                blacklist.forEach { state["$it$tag.jpg"] = "black" }
-                whitelist.forEach { state["$it$tag.jpg"] = "white" }
+                val keep = whitelist.map { "$it$tag.jpg" }
 
                 println(">> Updating $resolution.zip")
                 val zipFile = fetchFile("$resolution.zip", downloadsDir, credentials)
@@ -82,73 +77,20 @@ private class App {
                         file.validate(entry.size, entry.crc)
                     }
 
-                    if (!state.contains(entry.name)) {
-                        state[entry.name] = "new"
-                    }
-
-                    if (!arrayOf("black", "white").contains(state[entry.name])) {
-                        Desktop.getDesktop().open(file)
-                        val console = System.console() ?: continue@unzip
-                        query@ while (true) {
-                            print("-- Keep ${entry.name}? (y/n/r): ")
-                            when (console.readLine()?.toLowerCase()?.trim()?.getOrDefault(0, 'x')) {
-                                'y' -> {
-                                    state[entry.name] = "white"
-                                    break@query
-                                }
-                                'n' -> {
-                                    state[entry.name] = "black"
-                                    break@query
-                                }
-                                'r' -> Desktop.getDesktop().open(file)
-                            }
-                        }
-                    }
-
-                    if (state[entry.name] == "black") {
+                    if (!keep.contains(entry.name)) {
                         file.delete()
                     }
                 }
 
                 // clean up any remaining files that are not explicitly whitelisted
                 Files.list(targetDir).map { it.fileName.toString() }.toList()
-                    .subtract(state.filterValues { it == "white" }.keys)
+                    .subtract(keep)
                     .forEach {
                         targetDir.resolve(it).toFile().deleteRecursively()
                         println("Deleted '$it'")
                     }
-
-                // update filter lists
-                val pattern = "$tag\\.jpg\$".toRegex()
-                blacklist.updateAndSave(
-                    state.filterValues { it == "black" }.keys.map { it.replace(pattern, "") },
-                    blacklistPath
-                )
-                whitelist.updateAndSave(
-                    state.filterValues { it == "white" }.keys.map { it.replace(pattern, "") },
-                    whitelistPath
-                )
             }
 
         return 0
     }
-}
-
-private fun MutableSet<String>.updateAndSave(elements: Collection<String>, path: Path) {
-    if (this.addAll(elements)) {
-        val tempPath = Paths.get("$path.tmp")
-        tempPath.toFile().writeText(this.sorted().joinToString(separator = "\n", postfix = "\n"))
-        Files.move(
-            tempPath,
-            path,
-            StandardCopyOption.ATOMIC_MOVE
-        )
-    }
-}
-
-private fun String.getOrDefault(i: Int, c: Char): Char {
-    if (i >= 0 && i < this.length) {
-        return this[i]
-    }
-    return c
 }

@@ -14,15 +14,3 @@ internal fun Path.ensureDirectory(): Path {
     }
     return this
 }
-
-internal fun Path.ensureFile(): Path {
-    val file = this.toFile()
-
-    if (!file.isFile) {
-        if (file.exists()) {
-            throw EnsureException("'$this' exists but is not a file")
-        }
-        Files.createFile(this)
-    }
-    return this
-}
