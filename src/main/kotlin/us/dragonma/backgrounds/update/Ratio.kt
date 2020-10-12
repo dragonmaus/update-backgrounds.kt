@@ -26,7 +26,7 @@ internal class Ratio(x: Int, y: Int) {
     }
 
     private fun gcd(vararg ts: Int): Int {
-        var gcd = ts.min() ?: 1
+        var gcd = ts.minOrNull() ?: 1
         while (gcd > 1) {
             if (ts.all { it % gcd == 0 }) {
                 break

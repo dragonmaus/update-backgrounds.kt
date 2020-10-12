@@ -1,10 +1,10 @@
 plugins {
-    kotlin("jvm") version "1.3.72"
+    kotlin("jvm") version "1.4.10"
     application
 }
 
 group = "us.dragonma"
-version = "1.0.5"
+version = "1.0.6"
 
 repositories {
     mavenLocal()

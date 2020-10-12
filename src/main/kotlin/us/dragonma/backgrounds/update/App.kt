@@ -22,7 +22,7 @@ fun main(args: Array<String>) {
 }
 
 private class App {
-    internal val name = "update-backgrounds"
+    val name = "update-backgrounds"
 
     private val usage = "Usage: $name [-h]"
     private val help = """$usage
