@@ -26,12 +26,16 @@ private class App {
 
     private val usage = "Usage: $name [-h]"
     private val help = """$usage
+        |  -f   force extraction of non-updated files
         |  -h   display this help
     """.trimMargin()
+
+    private var force = false
 
     fun run(args: Array<String>): Int {
         GetOpt(args, "h").forEach {
             when (it) {
+                Option('f') -> force = true
                 Option('h') -> {
                     println(help)
                     return@run 0
@@ -64,70 +68,72 @@ private class App {
                 whitelist.forEach { state["$it$tag.jpg"] = "white" }
 
                 println(">> Updating $resolution.zip")
-                val zipFile = fetchFile("$resolution.zip", downloadsDir, credentials)
+                val (zipFile, updated) = fetchFile("$resolution.zip", downloadsDir, credentials)
 
-                val zip = ZipInputStream(BufferedInputStream(zipFile.inputStream()))
+                if (updated || force) {
+                    val zip = ZipInputStream(BufferedInputStream(zipFile.inputStream()))
 
-                println(">> Extracting ${zipFile.name} into $targetDir")
-                unzip@ while (true) {
-                    val entry = zip.nextEntry ?: break
-                    if (entry.isDirectory) {
-                        continue@unzip
-                    }
+                    println(">> Extracting ${zipFile.name} into $targetDir")
+                    unzip@ while (true) {
+                        val entry = zip.nextEntry ?: break
+                        if (entry.isDirectory) {
+                            continue@unzip
+                        }
 
-                    val file = targetDir.resolve(entry.name).toFile()
-                    if (!file.validates(entry.size, entry.crc)) {
-                        Files.copy(zip, file.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                        file.setLastModified(entry.time)
-                        file.validate(entry.size, entry.crc)
-                    }
+                        val file = targetDir.resolve(entry.name).toFile()
+                        if (!file.validates(entry.size, entry.crc)) {
+                            Files.copy(zip, file.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                            file.setLastModified(entry.time)
+                            file.validate(entry.size, entry.crc)
+                        }
 
-                    if (!state.contains(entry.name)) {
-                        state[entry.name] = "new"
-                    }
+                        if (!state.contains(entry.name)) {
+                            state[entry.name] = "new"
+                        }
 
-                    if (!arrayOf("black", "white").contains(state[entry.name])) {
-                        Desktop.getDesktop().open(file)
-                        val console = System.console() ?: continue@unzip
-                        query@ while (true) {
-                            print("-- Keep ${entry.name}? (y/n/r): ")
-                            when (console.readLine()?.toLowerCase()?.trim()?.getOrDefault(0, 'x')) {
-                                'y' -> {
-                                    state[entry.name] = "white"
-                                    break@query
+                        if (!arrayOf("black", "white").contains(state[entry.name])) {
+                            Desktop.getDesktop().open(file)
+                            val console = System.console() ?: continue@unzip
+                            query@ while (true) {
+                                print("-- Keep ${entry.name}? (y/n/r): ")
+                                when (console.readLine()?.toLowerCase()?.trim()?.getOrDefault(0, 'x')) {
+                                    'y' -> {
+                                        state[entry.name] = "white"
+                                        break@query
+                                    }
+                                    'n' -> {
+                                        state[entry.name] = "black"
+                                        break@query
+                                    }
+                                    'r' -> Desktop.getDesktop().open(file)
                                 }
-                                'n' -> {
-                                    state[entry.name] = "black"
-                                    break@query
-                                }
-                                'r' -> Desktop.getDesktop().open(file)
                             }
+                        }
+
+                        if (state[entry.name] == "black") {
+                            file.delete()
                         }
                     }
 
-                    if (state[entry.name] == "black") {
-                        file.delete()
-                    }
+                    // clean up any remaining files that are not explicitly whitelisted
+                    Files.list(targetDir).map { it.fileName.toString() }.toList()
+                        .subtract(state.filterValues { it == "white" }.keys)
+                        .forEach {
+                            targetDir.resolve(it).toFile().deleteRecursively()
+                            println("Deleted '$it'")
+                        }
+
+                    // update filter lists
+                    val pattern = "$tag\\.jpg\$".toRegex()
+                    blacklist.updateAndSave(
+                        state.filterValues { it == "black" }.keys.map { it.replace(pattern, "") },
+                        blacklistPath
+                    )
+                    whitelist.updateAndSave(
+                        state.filterValues { it == "white" }.keys.map { it.replace(pattern, "") },
+                        whitelistPath
+                    )
                 }
-
-                // clean up any remaining files that are not explicitly whitelisted
-                Files.list(targetDir).map { it.fileName.toString() }.toList()
-                    .subtract(state.filterValues { it == "white" }.keys)
-                    .forEach {
-                        targetDir.resolve(it).toFile().deleteRecursively()
-                        println("Deleted '$it'")
-                    }
-
-                // update filter lists
-                val pattern = "$tag\\.jpg\$".toRegex()
-                blacklist.updateAndSave(
-                    state.filterValues { it == "black" }.keys.map { it.replace(pattern, "") },
-                    blacklistPath
-                )
-                whitelist.updateAndSave(
-                    state.filterValues { it == "white" }.keys.map { it.replace(pattern, "") },
-                    whitelistPath
-                )
             }
 
         return 0

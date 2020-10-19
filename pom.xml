@@ -5,7 +5,7 @@
 
  <groupId>us.dragonma</groupId>
  <artifactId>update-backgrounds</artifactId>
- <version>1.0.8</version>
+ <version>1.1.0</version>
  <packaging>jar</packaging>
 
  <properties>
