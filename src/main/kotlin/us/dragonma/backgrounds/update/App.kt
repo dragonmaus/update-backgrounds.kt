@@ -25,12 +25,16 @@ private class App {
 
     private val usage = "Usage: $name [-h]"
     private val help = """$usage
+        |  -f   force extraction of non-updated files
         |  -h   display this help
     """.trimMargin()
+
+    private var force = false
 
     fun run(args: Array<String>): Int {
         GetOpt(args, "h").forEach {
             when (it) {
+                Option('f') -> force = true
                 Option('h') -> {
                     println(help)
                     return@run 0
@@ -59,36 +63,38 @@ private class App {
                 val keep = whitelist.map { "$it$tag.jpg" }
 
                 println(">> Updating $resolution.zip")
-                val zipFile = fetchFile("$resolution.zip", downloadsDir, credentials)
+                val (zipFile, updated) = fetchFile("$resolution.zip", downloadsDir, credentials)
 
-                val zip = ZipInputStream(BufferedInputStream(zipFile.inputStream()))
+                if (updated || force) {
+                    val zip = ZipInputStream(BufferedInputStream(zipFile.inputStream()))
 
-                println(">> Extracting ${zipFile.name} into $targetDir")
-                unzip@ while (true) {
-                    val entry = zip.nextEntry ?: break
-                    if (entry.isDirectory) {
-                        continue@unzip
+                    println(">> Extracting ${zipFile.name} into $targetDir")
+                    unzip@ while (true) {
+                        val entry = zip.nextEntry ?: break
+                        if (entry.isDirectory) {
+                            continue@unzip
+                        }
+
+                        val file = targetDir.resolve(entry.name).toFile()
+                        if (!file.validates(entry.size, entry.crc)) {
+                            Files.copy(zip, file.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                            file.setLastModified(entry.time)
+                            file.validate(entry.size, entry.crc)
+                        }
+
+                        if (!keep.contains(entry.name)) {
+                            file.delete()
+                        }
                     }
 
-                    val file = targetDir.resolve(entry.name).toFile()
-                    if (!file.validates(entry.size, entry.crc)) {
-                        Files.copy(zip, file.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                        file.setLastModified(entry.time)
-                        file.validate(entry.size, entry.crc)
-                    }
-
-                    if (!keep.contains(entry.name)) {
-                        file.delete()
-                    }
+                    // clean up any remaining files that are not explicitly whitelisted
+                    Files.list(targetDir).map { it.fileName.toString() }.toList()
+                        .subtract(keep)
+                        .forEach {
+                            targetDir.resolve(it).toFile().deleteRecursively()
+                            println("Deleted '$it'")
+                        }
                 }
-
-                // clean up any remaining files that are not explicitly whitelisted
-                Files.list(targetDir).map { it.fileName.toString() }.toList()
-                    .subtract(keep)
-                    .forEach {
-                        targetDir.resolve(it).toFile().deleteRecursively()
-                        println("Deleted '$it'")
-                    }
             }
 
         return 0

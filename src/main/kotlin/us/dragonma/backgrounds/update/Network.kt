@@ -7,7 +7,7 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import javax.net.ssl.HttpsURLConnection
 
-internal fun fetchFile(filename: String, directory: Path, credentials: Credentials): File {
+internal fun fetchFile(filename: String, directory: Path, credentials: Credentials): Pair<File, Boolean> {
     val url = URL("https://digitalblasphemy.com/content/zips/$filename")
     val path = directory.resolve(filename)
     val file = path.toFile()
@@ -15,7 +15,7 @@ internal fun fetchFile(filename: String, directory: Path, credentials: Credentia
     if (file.exists()) {
         url.setupConnection("HEAD", credentials).run {
             if (lastModified == file.lastModified()) {
-                return file
+                return Pair(file, false)
             }
         }
     }
@@ -25,7 +25,7 @@ internal fun fetchFile(filename: String, directory: Path, credentials: Credentia
         file.setLastModified(lastModified)
     }
 
-    return file
+    return Pair(file, true)
 }
 
 private fun URL.setupConnection(method: String, credentials: Credentials): HttpsURLConnection {
