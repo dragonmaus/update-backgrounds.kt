@@ -24,7 +24,7 @@ fun main(args: Array<String>) {
 private class App {
     val name = "update-backgrounds"
 
-    private val usage = "Usage: $name [-h]"
+    private val usage = "Usage: $name [-fh]"
     private val help = """$usage
         |  -f   force extraction of non-updated files
         |  -h   display this help
@@ -33,7 +33,7 @@ private class App {
     private var force = false
 
     fun run(args: Array<String>): Int {
-        GetOpt(args, "h").forEach {
+        GetOpt(args, "fh").forEach {
             when (it) {
                 Option('f') -> force = true
                 Option('h') -> {
