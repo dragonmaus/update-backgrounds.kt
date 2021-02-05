@@ -18,5 +18,5 @@ dependencies {
 }
 
 application {
-    mainClassName = "us.dragonma.backgrounds.update.AppKt"
+    mainClass.set("us.dragonma.backgrounds.update.AppKt")
 }
