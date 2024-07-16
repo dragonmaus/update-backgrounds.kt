@@ -19,9 +19,9 @@ internal class Credentials(
             val auth = ByteArray(username.length + 1 + password.size)
 
             var i = 0
-            username.forEach { auth[i++] = it.toByte() }
-            auth[i++] = ':'.toByte()
-            password.forEach { auth[i++] = it.toByte() }
+            username.forEach { auth[i++] = it.code.toByte() }
+            auth[i++] = ':'.code.toByte()
+            password.forEach { auth[i++] = it.code.toByte() }
 
             return "Basic ${Base64.getEncoder().encodeToString(auth)}"
         }

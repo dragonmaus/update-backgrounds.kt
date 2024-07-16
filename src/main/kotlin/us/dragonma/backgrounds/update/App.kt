@@ -9,7 +9,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.zip.ZipInputStream
-import kotlin.streams.toList
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
@@ -32,6 +31,7 @@ private class App {
 
     private var force = false
 
+    @Suppress("SameReturnValue")
     fun run(args: Array<String>): Int {
         GetOpt(args, "fh").forEach {
             when (it) {
@@ -96,7 +96,7 @@ private class App {
                             val console = System.console() ?: continue@unzip
                             query@ while (true) {
                                 print("-- Keep ${entry.name}? (y/n/r): ")
-                                when (console.readLine()?.toLowerCase()?.trim()?.getOrDefault(0, 'x')) {
+                                when (console.readLine().lowercase().trim().getOrDefault(0, 'x')) {
                                     'y' -> {
                                         state[entry.name] = "white"
                                         break@query
@@ -153,7 +153,7 @@ private fun MutableSet<String>.updateAndSave(elements: Collection<String>, path:
 }
 
 private fun String.getOrDefault(i: Int, c: Char): Char {
-    if (i >= 0 && i < this.length) {
+    if (i >= 0 && this.length > i) {
         return this[i]
     }
     return c
